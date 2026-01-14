@@ -52,7 +52,7 @@ global class CartCalculateSample extends CartExtension.CartCalculate {
                                 (buyerActions.isDeliveryGroupChanged() && CartExtension.CartStatusEnum.CHECKOUT == cart.getStatus());
 
         boolean runShippingPromotions = buyerActions.isEvaluateShippingRequested() ||
-                                        isRecalculationRequestedInCheckout(buyerActions, cart) ||
+                                        (isRecalculationRequestedInCheckout(buyerActions, cart) && CartExtension.CartStatusEnum.CHECKOUT == cart.getStatus()) ||
                                         (buyerActions.isDeliveryGroupChanged() && CartExtension.CartStatusEnum.CHECKOUT == cart.getStatus()) ||
                                         isCouponAppliedInCheckout;
 
