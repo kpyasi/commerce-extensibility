@@ -51,6 +51,11 @@ global class CartCalculateSample extends CartExtension.CartCalculate {
                                 isCouponAppliedInCheckout ||
                                 (buyerActions.isDeliveryGroupChanged() && CartExtension.CartStatusEnum.CHECKOUT == cart.getStatus());
 
+        boolean runShippingPromotions = buyerActions.isEvaluateShippingRequested() ||
+                                        (isRecalculationRequestedInCheckout(buyerActions, cart) && CartExtension.CartStatusEnum.CHECKOUT == cart.getStatus()) ||
+                                        (buyerActions.isDeliveryGroupChanged() && CartExtension.CartStatusEnum.CHECKOUT == cart.getStatus()) ||
+                                        isCouponAppliedInCheckout;
+
         boolean runPostShipping = buyerActions.isEvaluateShippingRequested() ||
                                     (isRecalculationRequestedInCheckout(buyerActions, cart) && CartExtension.CartStatusEnum.CHECKOUT == cart.getStatus()) ||
                                     (buyerActions.isDeliveryGroupChanged() && CartExtension.CartStatusEnum.CHECKOUT == cart.getStatus()) ||
@@ -95,6 +100,14 @@ global class CartCalculateSample extends CartExtension.CartCalculate {
             shipping(calculatorRequest);
 
             if (hasErrorLevelCartValidationOutput(cart.getCartValidationOutputs(), CartExtension.CartValidationOutputTypeEnum.SHIPPING)) {
+                return;
+            }
+        }
+
+        if (runShippingPromotions) {
+            shippingPromotions(calculatorRequest);
+
+            if (hasErrorLevelCartValidationOutput(cart.getCartValidationOutputs(), CartExtension.CartValidationOutputTypeEnum.SHIPPING_PROMOTIONS)) {
                 return;
             }
         }

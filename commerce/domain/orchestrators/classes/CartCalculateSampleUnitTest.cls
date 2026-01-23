@@ -14,6 +14,7 @@ global class CartCalculateSampleUnitTest {
     private static final String PROMOTIONS_RECALCULATED = 'PromotionsRecalculated';
     private static final String INVENTORY_CHECKED = 'InventoryChecked';
     private static final String SHIPPING_RECALCULATED = 'ShippingRecalculated';
+    private static final String SHIPPING_PROMOTIONS_RECALCULATED = 'ShippingPromotionsRecalculated';
     private static final String TAXES_RECALCULATED = 'TaxesRecalculated';
     private static final String POST_SHIPPING_COMPLETED = 'PostShippingCompleted';
 
@@ -168,7 +169,7 @@ global class CartCalculateSampleUnitTest {
 
         // Assert
         assertNoCartValidationOutputs(cart);
-        assertExpectedCalculations(cart, new List<String>{PROMOTIONS_RECALCULATED, SHIPPING_RECALCULATED, POST_SHIPPING_COMPLETED, TAXES_RECALCULATED});
+        assertExpectedCalculations(cart, new List<String>{PROMOTIONS_RECALCULATED, SHIPPING_RECALCULATED, SHIPPING_PROMOTIONS_RECALCULATED, POST_SHIPPING_COMPLETED, TAXES_RECALCULATED});
         assertUnexpectedCalculations(cart, new List<String>{CART_REPRICED, INVENTORY_CHECKED});
 
     }
@@ -442,6 +443,11 @@ global class CartCalculateSampleUnitTest {
         global override void shipping(CartExtension.CartCalculateCalculatorRequest request) {
             CartExtension.Cart cart = request.getCart();
             cart.setName(cart.getName() + ', ' + SHIPPING_RECALCULATED);
+        }
+
+        global override void shippingPromotions(CartExtension.CartCalculateCalculatorRequest request) {
+            CartExtension.Cart cart = request.getCart();
+            cart.setName(cart.getName() + ', ' + SHIPPING_PROMOTIONS_RECALCULATED);
         }
 
         global override void tax(CartExtension.CartCalculateCalculatorRequest request) {
