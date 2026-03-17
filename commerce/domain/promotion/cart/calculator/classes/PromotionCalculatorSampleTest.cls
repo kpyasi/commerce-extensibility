@@ -152,14 +152,19 @@ global class PromotionCalculatorSampleTest {
         Id cartId = createCartWithSpecifiedStatus(CartExtension.CartStatusEnum.CHECKOUT);
         CartExtension.Cart cart = addItemsToCart(cartId, 10, 3);
 
-        // Associate a QuoteLineItem with the first cart item
+        // Verify promotion is applied before QuoteLineItem association
+        promotionCalculator.calculate(
+            new CartExtension.CartCalculateCalculatorRequest(
+                cart, CartExtension.OptionalBuyerActionDetails.empty()));
+        Assert.areEqual(1, cart.getCartItems().get(1).getCartItemPriceAdjustments().size(),
+            'Promotion should be applied before QuoteLineItem association');
+
+        // Associate a QuoteLineItem with the first cart item and reload
         Id quoteLineItemId = createQuoteLineItem(cartId);
         update new CartItem(Id = cart.getCartItems().get(0).getId(), QuoteLineItemId = quoteLineItemId);
-
-        // Reload cart so the QuoteLineItemId is visible
         cart = CartExtension.CartTestUtil.getCart(cartId);
 
-        // Act
+        // Act - calculate again with QuoteLineItem now associated
         Test.startTest();
         promotionCalculator.calculate(
             new CartExtension.CartCalculateCalculatorRequest(
@@ -168,8 +173,10 @@ global class PromotionCalculatorSampleTest {
 
         // Assert - no adjustments applied because the quote guard fired before promotion evaluation
         Assert.areEqual(2, cart.getCartItems().size());
-        Assert.areEqual(0, cart.getCartItems().get(0).getCartItemPriceAdjustments().size());
-        Assert.areEqual(0, cart.getCartItems().get(1).getCartItemPriceAdjustments().size());
+        Assert.areEqual(0, cart.getCartItems().get(0).getCartItemPriceAdjustments().size(),
+            'Qualifying item should have no adjustments when quote guard fires');
+        Assert.areEqual(0, cart.getCartItems().get(1).getCartItemPriceAdjustments().size(),
+            'Target item should have no adjustments when quote guard fires');
     }
 
     /**
