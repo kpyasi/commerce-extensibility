@@ -23,12 +23,13 @@ public with sharing class SearchProductSearchSample extends ConnectApi.BaseEndpo
         System.debug('Entering the beforePost method of Commerce_Endpoint_Search_ProductSearch extension');
 
         // Retrieve the search term from the request
-        String searchTerm = (String)request.getParam('searchTerm');
+        ConnectApi.ProductSearchInput productSearchInput = (ConnectApi.ProductSearchInput)request.getParam('productSearchInput');
+        String searchTerm = (String)productSearchInput.searchTerm;
         System.debug('Original searchTerm: ' + searchTerm);
 
         // Modify the search term to demonstrate the extension is executing
-        String updatedSearchTerm = SEARCH_TERM_PREFIX + searchTerm;
-        request.setParam('searchTerm', updatedSearchTerm);
+        productSearchInput.searchTerm = updatedSearchTerm;
+        request.setParam('productSearchInput', productSearchInput);
 
         System.debug('Modified searchTerm to: ' + updatedSearchTerm);
 
