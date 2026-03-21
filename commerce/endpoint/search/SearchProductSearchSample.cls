@@ -28,6 +28,7 @@ public with sharing class SearchProductSearchSample extends ConnectApi.BaseEndpo
         System.debug('Original searchTerm: ' + searchTerm);
 
         // Modify the search term to demonstrate the extension is executing
+        String updatedSearchTerm = SEARCH_TERM_PREFIX + searchTerm;
         productSearchInput.searchTerm = updatedSearchTerm;
         request.setParam('productSearchInput', productSearchInput);
 
