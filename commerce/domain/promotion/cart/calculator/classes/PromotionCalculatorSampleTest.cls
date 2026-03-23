@@ -144,6 +144,84 @@ global class PromotionCalculatorSampleTest {
     }
 
     /**
+     * @description Verify promotion is skipped and adjustments are reset when a cart item is associated with a QuoteLineItem.
+     */
+    @IsTest
+    public static void testPromotionSkipped_WhenCartItemHasQuoteLineItem() {
+        // Arrange - quantities that would normally trigger the BOGO promotion (10 qualifiers, 3 targets)
+        Id cartId = createCartWithSpecifiedStatus(CartExtension.CartStatusEnum.CHECKOUT);
+        CartExtension.Cart cart = addItemsToCart(cartId, 10, 3);
+
+        // Verify promotion is applied before QuoteLineItem association
+        promotionCalculator.calculate(
+            new CartExtension.CartCalculateCalculatorRequest(
+                cart, CartExtension.OptionalBuyerActionDetails.empty()));
+        Assert.areEqual(1, cart.getCartItems().get(1).getCartItemPriceAdjustments().size(),
+            'Promotion should be applied before QuoteLineItem association');
+
+        // Associate a QuoteLineItem with the first cart item and reload
+        Id quoteLineItemId = createQuoteLineItem(cartId);
+        update new CartItem(Id = cart.getCartItems().get(0).getId(), QuoteLineItemId = quoteLineItemId);
+        cart = CartExtension.CartTestUtil.getCart(cartId);
+
+        // Act - calculate again with QuoteLineItem now associated
+        Test.startTest();
+        promotionCalculator.calculate(
+            new CartExtension.CartCalculateCalculatorRequest(
+                cart, CartExtension.OptionalBuyerActionDetails.empty()));
+        Test.stopTest();
+
+        // Assert - no adjustments applied because the quote guard fired before promotion evaluation
+        Assert.areEqual(2, cart.getCartItems().size());
+        Assert.areEqual(0, cart.getCartItems().get(0).getCartItemPriceAdjustments().size(),
+            'Qualifying item should have no adjustments when quote guard fires');
+        Assert.areEqual(0, cart.getCartItems().get(1).getCartItemPriceAdjustments().size(),
+            'Target item should have no adjustments when quote guard fires');
+    }
+
+    /**
+     * @description Creates the minimum Quote hierarchy needed to produce a real QuoteLineItem ID.
+     * @param cartId ID of the WebCart, used to look up the associated Account
+     * @return ID of the inserted QuoteLineItem
+     */
+    private static Id createQuoteLineItem(Id cartId) {
+        Id accountId = [SELECT AccountId FROM WebCart WHERE Id = :cartId].AccountId;
+
+        Product2 product = new Product2(Name = 'Quote Product', IsActive = true);
+        insert product;
+
+        Id standardPricebookId = Test.getStandardPricebookId();
+        PricebookEntry pricebookEntry = new PricebookEntry(
+            Pricebook2Id = standardPricebookId,
+            Product2Id = product.Id,
+            UnitPrice = 10.00,
+            IsActive = true);
+        insert pricebookEntry;
+
+        Opportunity opportunity = new Opportunity(
+            Name = 'Quote Opportunity',
+            AccountId = accountId,
+            StageName = 'Prospecting',
+            CloseDate = Date.today().addDays(30));
+        insert opportunity;
+
+        Quote quote = new Quote(
+            Name = 'Quote',
+            OpportunityId = opportunity.Id,
+            Pricebook2Id = standardPricebookId);
+        insert quote;
+
+        QuoteLineItem quoteLineItem = new QuoteLineItem(
+            QuoteId = quote.Id,
+            PricebookEntryId = pricebookEntry.Id,
+            Quantity = 1,
+            UnitPrice = 10.00);
+        insert quoteLineItem;
+
+        return quoteLineItem.Id;
+    }
+
+    /**
      * @description Create a WebCart with the specific status.
      * @param cartStatus Status of the Cart
      *

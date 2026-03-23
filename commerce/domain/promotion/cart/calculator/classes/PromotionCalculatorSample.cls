@@ -26,6 +26,15 @@ public with sharing class PromotionCalculatorSample extends CartExtension.Promot
      * @param optionalBuyerActionDetails The latest set of changes applied to the Cart by the Buyer
 	 */
     private void validateBuyerActionDetailsAndEvaluatePromotion(cartextension.Cart cart, cartextension.OptionalBuyerActionDetails optionalBuyerActionDetails) {
+        Iterator<CartExtension.CartItem> quoteCheckIter = cart.getCartItems().iterator();
+        while (quoteCheckIter.hasNext()) {
+            CartExtension.CartItem quoteCheckItem = quoteCheckIter.next();
+            if (quoteCheckItem.getQuoteLineItemId() != null) {
+                resetAllAdjustments(cart);
+                return;
+            }
+        }
+
         if (!optionalBuyerActionDetails.isPresent() || optionalBuyerActionDetails.get().isCheckoutStarted()) {
             resetAllAdjustments(cart);
             evaluatePromotionForCartItems(cart);
