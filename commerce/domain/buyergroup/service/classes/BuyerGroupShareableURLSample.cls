@@ -1,23 +1,31 @@
 /**
  * BuyerGroupShareableURLSample
- * 
+ *
  * This class is a sample implementation of the {@code commercebuygrp.BuyerGroupEvaluationService}.
- * It demonstrates how to extend the default buyer group evaluation logic to include custom criteria 
- * based on request context parameters. In this case, the custom criterion is the user's region, which 
+ * It demonstrates how to extend the default buyer group evaluation logic to include custom criteria
+ * based on request context parameters. In this case, the custom criterion is the user's region, which
  * is passed as a URL parameter (e.g., in a shareable URL for the storefront).
- * 
+ *
  * Use Case:
  * - Retrieve default buyer groups based on standard rules (account, market, and data cloud segments).
  * - Additionally, include buyer groups associated with the user's region (if provided via request context).
- * 
+ *
  * Notes:
  * - This example demonstrates extensibility for shareable URLs in the commerce storefront.
  * - To use this, the region parameter must be explicitly set in the request context via URL.
  * - When implementing real logic, replace the placeholder region-based filtering with actual mapping logic.
- * 
+ *
  * Limitations:
  * - Maximum allowed buyer groups is controlled by {@link #MAX_BUYER_GROUPS} (currently set to 30).
  * - If the number exceeds this limit, an error response is returned instead of the list.
+ *
+ * SECURITY CONSIDERATIONS (Secure by Default - Apex v67.0+):
+ * - This class explicitly declares WITHOUT SHARING because buyer group evaluation must access
+ *   all necessary data regardless of the current user's sharing rules.
+ * - The base implementation (super.getBuyerGroupIds) handles all data access with appropriate
+ *   security modes, so no additional WITH SYSTEM_MODE clauses are needed in this class.
+ * - This is intentional: buyer group evaluation is a system-level operation that should
+ *   not be limited by individual user permissions, especially for guest users.
  */
 public without sharing class BuyerGroupShareableURLSample extends commercebuygrp.BuyerGroupEvaluationService {
 
