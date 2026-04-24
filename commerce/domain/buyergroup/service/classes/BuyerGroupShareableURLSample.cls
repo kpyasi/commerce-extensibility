@@ -20,12 +20,16 @@
  * - If the number exceeds this limit, an error response is returned instead of the list.
  *
  * SECURITY CONSIDERATIONS (Secure by Default - Apex v67.0+):
- * - This class explicitly declares WITHOUT SHARING because buyer group evaluation must access
- *   all necessary data regardless of the current user's sharing rules.
- * - The base implementation (super.getBuyerGroupIds) handles all data access with appropriate
- *   security modes, so no additional WITH SYSTEM_MODE clauses are needed in this class.
- * - This is intentional: buyer group evaluation is a system-level operation that should
- *   not be limited by individual user permissions, especially for guest users.
+ *
+ * Starting with Apex v67.0 (Summer '26), all classes must explicitly declare sharing mode.
+ *
+ * This sample uses:
+ * - WITHOUT SHARING: Buyer group evaluation needs to work for guest users who have no permissions.
+ *   The base implementation (super.getBuyerGroupIds) already handles data access with system-level
+ *   permissions, so this class inherits that security model.
+ *
+ * For more information on Apex Secure by Default, see:
+ * https://help.salesforce.com/s/articleView?id=release-notes.rn_apex.htm&release=262&type=5
  */
 public without sharing class BuyerGroupShareableURLSample extends commercebuygrp.BuyerGroupEvaluationService {
 

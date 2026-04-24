@@ -16,13 +16,21 @@
  * - No more than MAX_BUYER_GROUPS should be returned by the code.
  *
  * SECURITY CONSIDERATIONS (Secure by Default - Apex v67.0+):
- * - This class explicitly declares WITHOUT SHARING because buyer group evaluation must access
- *   all necessary data regardless of the current user's sharing rules.
- * - All SOQL queries use WITH SYSTEM_MODE to ensure they can retrieve buyer group data
- *   without being restricted by the user's field-level or object-level permissions.
- * - This is intentional: buyer group evaluation is a system-level operation that should
- *   not be limited by individual user permissions, especially for guest users.
- * - NOTE: WITH SYSTEM_MODE is backward compatible with earlier API versions.
+ *
+ * Starting with Apex v67.0 (Summer '26), all classes must explicitly declare sharing mode and
+ * all queries must specify WITH SYSTEM_MODE or WITH USER_MODE.
+ *
+ * This sample uses:
+ * - WITHOUT SHARING: Buyer group evaluation needs to work for guest users who have no object/field
+ *   permissions. Using "with sharing" would prevent guest users from accessing buyer group data.
+ *
+ * - WITH SYSTEM_MODE for all queries: Guest users need to retrieve buyer group associations, postal
+ *   codes, and account data. WITH USER_MODE would cause permission errors for guest users.
+ *
+ * Note: WITH SYSTEM_MODE is backward compatible (ignored in v64-v66 where it was already the default).
+ *
+ * For more information on Apex Secure by Default, see:
+ * https://help.salesforce.com/s/articleView?id=release-notes.rn_apex.htm&release=262&type=5
  */
 public without sharing class BuyerGroupEvaluationServiceSample extends commercebuygrp.BuyerGroupEvaluationService {
 
