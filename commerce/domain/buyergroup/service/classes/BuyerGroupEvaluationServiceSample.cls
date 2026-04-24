@@ -4,16 +4,33 @@
  * - Out-of-the-box buyer groups based on account, market, and data cloud segment should be returned for both logged-in and guest users.
  * - In addition, if the user is a guest or logged-in, then the buyer groups associated with the active postal code stored using deviceId should also be returned.
  * - For logged-in users, the buyer groups associated with the BillingPostalCode and ShippingPostalCode of the Account linked to the user are also returned.
- * 
+ *
  * Data model changes to support the sample code are as follows:
  * - PostalCode__c: Stores the supported postal codes in the PostalCode field.
- * - Active_PostalCode__c: Stores the association between deviceId (Guest UUID cookie value) and PostalCode__c. 
+ * - Active_PostalCode__c: Stores the association between deviceId (Guest UUID cookie value) and PostalCode__c.
  *                          This can typically be populated via a custom LWC component where a customer chooses a postal code from a list of available postal codes.
  * - Postal_Code_Buyer_Group__c: A junction entity that stores a static mapping between PostalCode__c and the buyer groups associated with it.
- * 
+ *
  * Important considerations in the code below:
- * - Buyer group responses should be cached using Org Cache to support low latency. 
- * - No more than MAX_BUYER_GROUPS should be returned by the code. 
+ * - Buyer group responses should be cached using Org Cache to support low latency.
+ * - No more than MAX_BUYER_GROUPS should be returned by the code.
+ *
+ * SECURITY CONSIDERATIONS (Secure by Default - Apex v67.0+):
+ *
+ * Starting with Apex v67.0 (Summer '26), all classes must explicitly declare sharing mode and
+ * all queries must specify WITH SYSTEM_MODE or WITH USER_MODE.
+ *
+ * This sample uses:
+ * - WITHOUT SHARING: Buyer group evaluation needs to work for guest users who have no object/field
+ *   permissions. Using "with sharing" would prevent guest users from accessing buyer group data.
+ *
+ * - WITH SYSTEM_MODE for all queries: Guest users need to retrieve buyer group associations, postal
+ *   codes, and account data. WITH USER_MODE would cause permission errors for guest users.
+ *
+ * Note: WITH SYSTEM_MODE is backward compatible (ignored in v64-v66 where it was already the default).
+ *
+ * For more information on Apex Secure by Default, see:
+ * https://help.salesforce.com/s/articleView?id=release-notes.rn_apex.htm&release=262&type=5
  */
 public without sharing class BuyerGroupEvaluationServiceSample extends commercebuygrp.BuyerGroupEvaluationService {
 
@@ -23,7 +40,7 @@ public without sharing class BuyerGroupEvaluationServiceSample extends commerceb
         String currentUserId = UserInfo.getUserId(); // Gets the current user ID; could be a logged-in or guest user
         String webstoreId = request.getStoreId(); // Gets the webstore record ID
         String accountId = request.getAccountId(); // Gets the account ID of the user
-        String siteId = ((String) [SELECT SiteId FROM WebstoreNetwork WHERE WebstoreId = :webstoreId][0].get('SiteId')).substring(0, 15); // Gets the network site ID
+        String siteId = ((String) [SELECT SiteId FROM WebstoreNetwork WHERE WebstoreId = :webstoreId WITH SYSTEM_MODE][0].get('SiteId')).substring(0, 15); // Gets the network site ID
         Map<String, Object> requestParameters = request.getRequestContextParameters();
         Boolean isGuestUser = (Boolean) requestParameters.get('isGuestUser');
         String guestUUIDKey = 'guest_uuid_essential_' + siteId; // Gets the guest UUID cookie key for the current webstore
@@ -47,7 +64,7 @@ public without sharing class BuyerGroupEvaluationServiceSample extends commerceb
 
         // If the user is logged in, get the BillingPostalCode and ShippingPostalCode
         if (!isGuestUser) {
-            SObject currentAccount = [SELECT BillingPostalCode, ShippingPostalCode FROM Account WHERE Id = :accountId][0];
+            SObject currentAccount = [SELECT BillingPostalCode, ShippingPostalCode FROM Account WHERE Id = :accountId WITH SYSTEM_MODE][0];
             String billingPostalCode = (String) currentAccount.get('BillingPostalCode');
             String shippingPostalCode = (String) currentAccount.get('ShippingPostalCode');
             if (billingPostalCode != null) {
@@ -59,14 +76,14 @@ public without sharing class BuyerGroupEvaluationServiceSample extends commerceb
         }
 
         // Get active postal codes for both logged-in and guest users based on their device ID
-        for (Active_PostalCode__c activePostalCode : [SELECT PostalCode__r.PostalCode__c FROM Active_PostalCode__c WHERE DeviceId__c = :deviceId]) {
+        for (Active_PostalCode__c activePostalCode : [SELECT PostalCode__r.PostalCode__c FROM Active_PostalCode__c WHERE DeviceId__c = :deviceId WITH SYSTEM_MODE]) {
             if (activePostalCode.PostalCode__c != null) {
                 activePostalCodes.add(activePostalCode.PostalCode__r.PostalCode__c);
             }
         }
 
         // Get the buyer groups associated with the postal codes
-        for (Postal_Code_Buyer_Group__c buyerGroup : [SELECT Buyer_Group__c FROM Postal_Code_Buyer_Group__c WHERE PostalCode__r.PostalCode__c IN :activePostalCodes]) {
+        for (Postal_Code_Buyer_Group__c buyerGroup : [SELECT Buyer_Group__c FROM Postal_Code_Buyer_Group__c WHERE PostalCode__r.PostalCode__c IN :activePostalCodes WITH SYSTEM_MODE]) {
             buyerGroupIds.add(buyerGroup.Buyer_Group__c);
         }
         
