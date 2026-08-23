@@ -156,20 +156,13 @@ public class PricingServiceSample extends commercestorepricing.PricingService {
     return txnResponse;
   }
 
-  // Override resolveContracts to resolve contract prices for cart lines (resolveContracts,
-  // API v264+).
-  // - Authoritative: calls disableDefaultResolution() so any line this extension does not resolve
-  //   prices to LIST (the platform does NOT back-fill).
-  // - Overlap handling: when a product has multiple ContractItemPrice rows, the one with the
-  //   latest StartDate wins (CreatedDate breaks same-day ties).
-  //
-  // NOTE: disableDefaultResolution() exists only on 264-patch / 266+ builds. Deploy to such an org.
+  // Override resolveContracts to resolve contract prices for cart lines. When a product has
+  // multiple ContractItemPrice rows, the one with the latest StartDate wins (CreatedDate breaks
+  // same-day ties).
   public override commercestorepricing.ContractResolutionResponse resolveContracts(
     commercestorepricing.ContractResolutionRequest request
   ) {
     commercestorepricing.ContractResolutionResponse response = request.newResponse();
-
-    // Make this extension authoritative: unresolved lines price to list, no platform back-fill.
     response.enableDefaultResolution();
 
     try {
@@ -184,7 +177,6 @@ public class PricingServiceSample extends commercestorepricing.PricingService {
         return response;
       }
 
-      // 1) Collect all product Ids from the batch.
       Set<String> productIds = new Set<String>();
       for (commercestorepricing.ContractPricingRequestItem item : items) {
         if (String.isNotBlank(item.getProductId())) {
@@ -195,9 +187,6 @@ public class PricingServiceSample extends commercestorepricing.PricingService {
         return response;
       }
 
-      // 2) ONE bulkified query. WITH SYSTEM_MODE reads contract data the buyer may not see.
-      //    ORDER BY StartDate DESC, CreatedDate DESC => latest-dated contract price is the first
-      //    row per product, so we keep it and skip the rest (overlap/conflict resolution).
       Map<String, ContractDataFromExternalService> contractsByProduct =
         new Map<String, ContractDataFromExternalService>();
       for (ContractItemPrice cip : [
@@ -220,7 +209,6 @@ public class PricingServiceSample extends commercestorepricing.PricingService {
         }
       }
 
-      // 3) Record the resolved contract for each line.
       for (commercestorepricing.ContractPricingRequestItem item : items) {
         ContractDataFromExternalService c = contractsByProduct.get(item.getProductId());
         if (c != null) {
@@ -231,11 +219,9 @@ public class PricingServiceSample extends commercestorepricing.PricingService {
             c.getContractItemPriceId()
           );
         }
-        // Unresolved lines are left off => they price to list (disableDefaultResolution).
       }
 
     } catch (Exception e) {
-      // Fail safe: never let an exception escape (that would force platform default resolution).
       System.debug(LoggingLevel.ERROR, 'resolveContracts failed: ' + e.getMessage());
     }
 
@@ -357,7 +343,7 @@ public class PricingServiceSample extends commercestorepricing.PricingService {
     }
   }
 
-  // Holds the contract data resolved for a line.
+  // Structure to store the contract data resolved for a line
   public class ContractDataFromExternalService {
     private String contractId;
     private String contractItemPriceId;
