@@ -223,8 +223,7 @@ public class PricingServiceSample extends commercestorepricing.PricingService {
       //   - ORDER BY ItemId, StartDate DESC, CreatedDate DESC -> groups rows by product and puts
       //                                          the winning row (latest start, newest tie-break)
       //                                          first within each product group.
-      Map<String, ContractDataFromExternalService> contractsByProduct =
-        new Map<String, ContractDataFromExternalService>();
+      Map<String, ContractItemPrice> contractsByProduct = new Map<String, ContractItemPrice>();
       for (ContractItemPrice cip : [
           SELECT Id, ContractId, ItemId, ProductSellingModelId, Price, StartDate
           FROM ContractItemPrice
@@ -239,10 +238,7 @@ public class PricingServiceSample extends commercestorepricing.PricingService {
         // Because of the ORDER BY, the first row seen for each product is the winner; keep it and
         // ignore any later (older) rows for the same product.
         if (!contractsByProduct.containsKey(cip.ItemId)) {
-          contractsByProduct.put(
-            cip.ItemId,
-            new ContractDataFromExternalService(cip.ContractId, cip.Id)
-          );
+          contractsByProduct.put(cip.ItemId, cip);
         }
       }
 
@@ -251,13 +247,13 @@ public class PricingServiceSample extends commercestorepricing.PricingService {
       // Lines with no matching contract are simply left unresolved and handled per the default
       // resolution setting chosen above.
       for (commercestorepricing.ContractPricingRequestItem item : items) {
-        ContractDataFromExternalService c = contractsByProduct.get(item.getProductId());
-        if (c != null) {
+        ContractItemPrice cip = contractsByProduct.get(item.getProductId());
+        if (cip != null) {
           response.putContractForLine(
             item.getProductId(),
             item.getPsmId(),
-            c.getContractId(),
-            c.getContractItemPriceId()
+            cip.ContractId,
+            cip.Id
           );
         }
       }
@@ -384,22 +380,6 @@ public class PricingServiceSample extends commercestorepricing.PricingService {
     }
     public Decimal getUnitPrice() {
       return unitPrice;
-    }
-  }
-
-  // Structure to store the contract data resolved for a line
-  public class ContractDataFromExternalService {
-    private String contractId;
-    private String contractItemPriceId;
-    public ContractDataFromExternalService(String inputContractId, String inputContractItemPriceId) {
-      this.contractId = inputContractId;
-      this.contractItemPriceId = inputContractItemPriceId;
-    }
-    public String getContractId() {
-      return contractId;
-    }
-    public String getContractItemPriceId() {
-      return contractItemPriceId;
     }
   }
 }
