@@ -266,8 +266,7 @@ public class PricingServiceSample extends commercestorepricing.PricingService {
       // Fail safe: swallow and log so a runtime error here does not break the whole pricing
       // request. Unresolved lines then follow the default resolution behavior. Replace this with
       // your own logging/alerting as appropriate.
-      System.debug(LoggingLevel.ERROR, 'resolveContracts failed: ' + e.getMessage() +
-                   ', stacktrace: ' + e.getStackTraceString());
+      System.debug('resolveContracts failed, message: ' + e.getMessage() + ', stacktrace: ' + e.getStackTraceString());
     }
 
     return response;
