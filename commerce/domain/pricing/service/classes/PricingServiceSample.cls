@@ -223,7 +223,11 @@ public class PricingServiceSample extends commercestorepricing.PricingService {
       //   - ORDER BY ItemId, StartDate DESC, CreatedDate DESC -> groups rows by product and puts
       //                                          the winning row (latest start, newest tie-break)
       //                                          first within each product group.
-      Map<String, ContractItemPrice> contractsByProduct = new Map<String, ContractItemPrice>();
+      // Key by Id (not String): the Apex Id type normalizes 15- and 18-char ids on both put
+      // and get, so a 15-char productId from one storefront surface (e.g. cart) still matches
+      // the 18-char ItemId that SOQL always returns. A String-keyed map compares exact
+      // characters and can miss, resolving PDP and cart differently for the same product.
+      Map<Id, ContractItemPrice> contractsByProduct = new Map<Id, ContractItemPrice>();
       for (ContractItemPrice cip : [
           SELECT Id, ContractId, ItemId, ProductSellingModelId, Price, StartDate
           FROM ContractItemPrice
@@ -262,7 +266,8 @@ public class PricingServiceSample extends commercestorepricing.PricingService {
       // Fail safe: swallow and log so a runtime error here does not break the whole pricing
       // request. Unresolved lines then follow the default resolution behavior. Replace this with
       // your own logging/alerting as appropriate.
-      System.debug(LoggingLevel.ERROR, 'resolveContracts failed: ' + e.getMessage());
+      System.debug(LoggingLevel.ERROR, 'resolveContracts failed: ' + e.getMessage() +
+                   ', stacktrace: ' + e.getStackTraceString());
     }
 
     return response;
